@@ -13,7 +13,7 @@ with open('sample_data.txt', 'r') as file:
         }
         for pair in test:
             value, color = pair.split()
-            maxValues[color] = maxValues[color] if maxValues[color] >= int(value) else int(value)
+            maxValues[color] = max(maxValues[color], int(value))
         gameResult = 1
         for value in maxValues.values():
             gameResult *= value
