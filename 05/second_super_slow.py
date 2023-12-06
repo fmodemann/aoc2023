@@ -1,10 +1,25 @@
 import sys
-
 import numpy as np
+import threading
 
 
 def map_seed(seed: int, mapping: [int]) -> int:
     return seed + mapping[0] - mapping[1]
+
+
+def process_seeds(start_index, end_index, extendedList, maps):
+    global smallestLocation
+    for seedIndex in range(start_index, end_index):
+        seed = extendedList[seedIndex]
+        location = seed
+        for mappingGroup in maps.values():
+            for mapping in mappingGroup:
+                if mapping[1] <= seed <= mapping[1] + mapping[2]:
+                    location = map_seed(seed, mapping)
+                    break
+            seed = location
+
+        smallestLocation = location if location < smallestLocation else smallestLocation
 
 
 # Read the input file
@@ -30,17 +45,29 @@ for line in lines:
     elif (current_map is not None) & (line.strip() != ''):
         values = list(map(int, line.strip().split()))
         current_map.append(values)
-smallestLocation = sys.maxsize
-location = 0
-for seedIndex, seed in enumerate(extendedList):
-    location = seed
-    for mappingGroup in maps.values():
-        for mapping in mappingGroup:
-            if (seed >= mapping[1]) & (seed <= mapping[1] + mapping[2]):
-                location = map_seed(seed, mapping)
-                break
-        seed = location
 
-    smallestLocation = location if location < smallestLocation else smallestLocation
-    print(seedIndex / len(extendedList) * 100, "%")
-print(smallestLocation)
+smallestLocation = sys.maxsize
+
+# Number of threads
+num_threads = 200  # You can adjust this as needed
+
+# Divide the work among threads
+thread_list = []
+seed_count = len(extendedList)
+chunk_size = seed_count // num_threads
+
+for i in range(num_threads):
+    start = i * chunk_size
+    end = (i + 1) * chunk_size if i < num_threads - 1 else seed_count
+    thread = threading.Thread(target=process_seeds, args=(start, end, extendedList, maps))
+    thread_list.append(thread)
+
+# Start the threads
+for thread in thread_list:
+    thread.start()
+
+# Wait for all threads to finish
+for thread in thread_list:
+    thread.join()
+
+print("Smallest Location:", smallestLocation)
